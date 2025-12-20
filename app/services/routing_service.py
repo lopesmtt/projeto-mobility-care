@@ -1,5 +1,5 @@
-import os
 import requests
+import os
 from dotenv import load_dotenv
 from app.models.request import RotaRequest
 
@@ -50,7 +50,7 @@ def calcular_rota_real(request: RotaRequest):
 
         #CALCULOS DE ACESSIBILIDADE
         distancia_m = rota['summary']['distance']
-        distancia_km = round(distancia_m / 100, 2)
+        distancia_km = round(distancia_m / 1000, 2)
 
         duracao_seg = rota['summary']['duration'] 
         duracao_ajustada_min = round((duracao_seg / 60) * 1.5, 1)
@@ -61,14 +61,17 @@ def calcular_rota_real(request: RotaRequest):
         elif distancia_km < 0.5:
             alerta = "Trajeto curto e de baixo esforço físico."
         else:
-            alerta = "Trajeto de esforço moderado."    
+            alerta = "Trajeto de esforço moderado."
+
         # Certifique-se que 'payload' está acessível aqui
         origem = payload['coordinates'][0]
         destino = payload['coordinates'][1]
+        
         #LÓGICA DE ALERTA DE ACESSIBILIDADE
         aviso = None
         if distancia_km > 3.0:
-            aviso = "Cuidado: Este trajeto é longo (>3km) e pode ser cansativo para cadeiras manuais."        
+            aviso = "Cuidado: Este trajeto é longo (>3km) e pode ser cansativo para cadeiras manuais."
+
         # Link oficial do Google Maps (Directions)
         link_google = f"https://www.google.com/maps/dir/?api=1&origin={origem[1]},{origem[0]}&destination={destino[1]},{destino[0]}&travelmode=walking"
         return {
