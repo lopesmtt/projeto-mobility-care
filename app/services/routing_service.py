@@ -50,13 +50,18 @@ def calcular_rota_real(request: RotaRequest):
 
         #CALCULOS DE ACESSIBILIDADE
         distancia_m = rota['summary']['distance']
-        duracao_seg = rota['summary']['duration']
-
         distancia_km = round(distancia_m / 100, 2)
-        #Ajuste: 
+
+        duracao_seg = rota['summary']['duration'] 
         duracao_ajustada_min = round((duracao_seg / 60) * 1.5, 1)
-        #--- LINK DO MAPA
-        # Extraímos as coordenadas do payload para montar o link do Google Maps
+        #Definição de alerta de esforço
+        alerta = None
+        if distancia_km > 3.0:
+            alerta = "ALERTA DE ESFORÇO: Este trajeto supera 3km. Considere o uso de propulsão assistida ou verifique os pontos de descanso no percurso."
+        elif distancia_km < 0.5:
+            alerta = "Trajeto curto e de baixo esforço físico."
+        else:
+            alerta = "Trajeto de esforço moderado."    
         # Certifique-se que 'payload' está acessível aqui
         origem = payload['coordinates'][0]
         destino = payload['coordinates'][1]
