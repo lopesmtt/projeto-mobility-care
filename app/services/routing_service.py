@@ -19,19 +19,20 @@ def calcular_rota_real(request: RotaRequest):
         Simula cálculo de rota para acessibilidade.
         Este serviço recebe um objeto do tipo RotaRequest (validado pelo Pydantic).
         """
-    url = "https://api.openrouteservice.org/v2/directions/foot-walking"
+        
+    url = "https://api.openrouteservice.org/v2/directions/foot-walking/geojson"
 
     headers = {
         'Authorization': API_KEY,
         'Content-Type': 'application/json; charset=utf-8',
-        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+        'Accept': 'application/geo+json'
     }
 
     #O ORS exige [longitude e latitude]
     payload = {
         "coordinates": [
-            [request.origem.lon, request.origem.lat],
-            [request.destino.lon, request.destino.lat]
+            [float(request.origem.lon), float(request.origem.lat)],
+            [float(request.destino.lon), float(request.destino.lat)]
         ],
         "language": "pt"
     }
@@ -39,23 +40,24 @@ def calcular_rota_real(request: RotaRequest):
     
     try:
         response = requests.post(url, json=payload, headers=headers)
+        dados = response.json()
         # Se a API responder qualquer coisa diferente de 200 (sucesso)
         if response.status_code != 200:
-            print(f"ERRO API ORS: {response.status_code}")
-            print(f"RESPOSTA DA API: {response.text}")
-            return {"status": "erro", "detalhe": f"ORS deu erro{response.status_code}: {response.text}"}
-
-        dados = response.json()
-        rota = dados['routes'][0]
+            msg_erro = dados.get('error', {}.get('message', 'Erro na API externa'))
+            print(f"ERRO DO ORS: {msg_erro}")
+            return {"status": "erro", "detalhe": f"Não foi possível traçar a rota:{msg_erro}"}
+        
+        if 'features' not in dados or len(dados['features']) == 0:
+            return {"status": "erro", "detalhe": f"Não foi possível traçar a rota: {msg_erro}"}
+        feature = dados['features'][0]
+        summary = feature['properties']['summary']
+        segmento = feature['properties']['segments'][0]
 
         #CALCULOS DE ACESSIBILIDADE
-        distancia_m = rota['summary']['distance']
-        distancia_km = round(distancia_m / 1000, 2)
-
-        duracao_seg = rota['summary']['duration'] 
-        duracao_ajustada_min = round((duracao_seg / 60) * 1.5, 1)
+        distancia_km = round(summary['distance'] / 1000, 2) 
+        duracao_ajustada_min = round((summary['duration'] / 60) * 1.5, 1)
         #Definição de alerta de esforço
-        alerta = None
+        alerta = "Trajeto de esforço moederado."
         if distancia_km > 3.0:
             alerta = "ALERTA DE ESFORÇO: Este trajeto supera 3km. Considere o uso de propulsão assistida ou verifique os pontos de descanso no percurso."
         elif distancia_km < 0.5:
@@ -63,23 +65,22 @@ def calcular_rota_real(request: RotaRequest):
         else:
             alerta = "Trajeto de esforço moderado."
 
-        # Certifique-se que 'payload' está acessível aqui
-        origem = payload['coordinates'][0]
-        destino = payload['coordinates'][1]
-        
+        # Link oficial do Google Maps (Directions)
+        link_google = f"https://www.google.com/maps/dir/?api=1&origin={request.origem.lat},{request.origem.lon}&destination={request.destino.lat},{request.destino.lon}&travelmode=walking"
+
+                
         #LÓGICA DE ALERTA DE ACESSIBILIDADE
         aviso = None
         if distancia_km > 3.0:
             aviso = "Cuidado: Este trajeto é longo (>3km) e pode ser cansativo para cadeiras manuais."
-
-        # Link oficial do Google Maps (Directions)
-        link_google = f"https://www.google.com/maps/dir/?api=1&origin={origem[1]},{origem[0]}&destination={destino[1]},{destino[0]}&travelmode=walking"
         return {
             "status": "sucesso",
             "distancia_km": distancia_km,
             "duracao_min": duracao_ajustada_min,
+            "alerta_acessibilidade": alerta,
+            "geometria": feature['geometry'],
             "link_google_maps": link_google,
-            "passo_a_passo": [etapa['instruction'] for etapa in rota['segments'][0]['steps']]
+            "passo_a_passo": [etapa.get('instruction', 'Siga em frente') for etapa in segmento['steps']]
         }
     except Exception as e:
         print(f"ERRO NO CÓDIGO:{str(e)}")

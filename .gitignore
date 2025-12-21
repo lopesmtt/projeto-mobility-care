@@ -1,5 +1,13 @@
+# Chaves e segredos
 .env
+
+# Pastas do Python
 __pycache__/
 *.pyc
 venv/
+env/
+
+# Configurações de editor
 .vscode/
+.idea/
+.DS_Store
