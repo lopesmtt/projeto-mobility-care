@@ -17,6 +17,16 @@
 
         <div id="sidebar">
             <h2>♿ Mobility Care </h2>
+
+            <div style=" margin-bottom: 15px;">
+                <label for="tipo_usuario" style="font-size: 0.9em; font-weight: bold;">Tipo de mobilidade</label>
+                <select id="tipo_usuario" style="width: 100%; padding: 5px; margin-top: 5px;">
+                    <option value="pcd_manual">Cadeira Manual (Esforço maior)</option>
+                    <option value="pcd_motorizada">Cadeira motorizada (Mais rápido)</option>
+                    <option value="mobilidade_reduzida"> Mobilidade Reduzida (Idoso/Muleta)</option>
+                </select>
+            </div>
+
             <div id="info">
             <p>Clique em dois pontos no mapa para traçar a rota.</p>
             </div>
@@ -24,89 +34,111 @@
         <div id="map"></div>
 
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"> </script>
-        <script>
-            // Inicializa o mapa em Recife
-            const map = L.map('map').setView([-8.0631, -34.8711], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-            attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map); 
-            let markers = []; // Para guardar os pinos do mapa
-            //2. Função que escuta o clique no mapa
+       <script>
+    const map = L.map('map').setView([-8.0631, -34.8711], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map); 
 
-            
-            map.on('click', function(e){
-                if (markers.length >=2){
-                    markers.forEach(m => map.removeLayer(m));
-                    markers = [];
-                    document.getElementById('info').innerHTML = '';
-                }
-                // Adiciona um marcador onde o usuário clicou.
+    // Ícones corrigidos
+    const iconPCD = L.icon({
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/0c/Wheelchair_symbol.svg',
+        iconSize: [35, 35],
+        iconAnchor: [17, 35],
+        popupAnchor: [0, -35]
+    });
+    const iconDestino = L.icon({
+        iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+        iconSize: [35, 35],
+        iconAnchor: [17, 35]
+    });
 
-                const novoMarcador = L.marker(e.latlng).addTo(map);
-                markers.push(novoMarcador);
+    let markers = [];
 
-                if (markers.length === 1) {
-                    document.getElementById('info').innerHTML = '<p><b>Partida definida</b><br>Agora clique no destino.</p>';
-                }
-                //Se tiver duas marcas chamamos a API
-                if (markers.length === 2) {
-                    const origem = markers[0].getLatLng();
-                    const destino = markers[1].getLatLng();
+    map.on('click', function(e){
+        if (markers.length >= 2){
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+            if (window.rotaAtual) map.removeLayer(window.rotaAtual);    
+        }
 
-                    document.getElementById('info').innerHTML ='<p>Calculando rota acessível...</p>';
-                    enviarParaAPI(origem, destino);
-                }
+        const iconeUsar = (markers.length === 0) ? iconPCD : iconDestino;
+        const novoMarcador = L.marker(e.latlng, {icon: iconeUsar}).addTo(map);
+        markers.push(novoMarcador);
+
+        if (markers.length === 1){
+            document.getElementById('info').innerHTML = '<p><b>Partida definida.</b><br>Agora clique no destino.</p>';    
+        }
+        if (markers.length === 2){
+            enviarParaAPI(markers[0].getLatLng(), markers[1].getLatLng());
+        }
+    });
+
+    async function enviarParaAPI(origem, destino) {
+        const infoDiv = document.getElementById('info');
+        const tipoUsuario = document.getElementById('tipo_usuario').value;
+        
+        infoDiv.innerHTML = '<p>⏳ Calculando rota acessível...</p>';
+
+        try {
+            // APENAS UM FETCH COM O TIPO CORRETO
+            const res = await fetch('/api/v1/otimizar-rota', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    origem: {lat: origem.lat, lon: origem.lng},
+                    destino: {lat: destino.lat, lon: destino.lng},
+                    tipo_usuario: tipoUsuario
+                })
             });
-            async function enviarParaAPI(origem, destino) {
-                const infoDiv = document.getElementById('info')
-                infoDiv.innerHTML = '<p>⏳ Calculando rota acessível...</p>'
-                try {
-                    const res = await fetch('/api/v1/otimizar-rota',{
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        origem: {lat: origem.lat, lon: origem.lng},
-                        destino: {lat: destino.lat, lon: destino.lng},
-                        tipo_usuario: "pcd_cadeirante"
-                    })
-                });
-                const data = await res.json();
 
-                console.log("DADOS RECEBIDOS DO PYTHON:",data);
+            const data = await res.json();
 
-                if (data.status === "sucesso") {
-                    if (window.rotaAtual){
-                        map.removeLayer(window.rotaAtual);
-                    }
-                    if (data.geometria){
-                        window.rotaAtual = L.geoJSON(data.geometria, {
-                            style: {color: '#007bff', weight: 5, opacity: 0.7}
-                        }).addTo(map);
-                        //faz o mapa focar na rota inteira
-                        map.fitBounds(window.rotaAtual.getBounds());
-                    }
-                    infoDiv.innerHTML = `
+            if (data.status === "sucesso") {
+                if (window.rotaAtual) map.removeLayer(window.rotaAtual);
+                
+                window.rotaAtual = L.geoJSON(data.geometria, {
+                    style: {color: '#007bff', weight: 5, opacity: 0.7}
+                }).addTo(map);
+                
+                map.fitBounds(window.rotaAtual.getBounds());
+
+                infoDiv.innerHTML = `
                     <div class="alert" style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; margin-bottom: 10px;">
-                        ${data.alerta_acessibilidade || "Trajeto calculado com sucesso."}
+                        <strong>Aviso:</strong> ${data.alerta_acessibilidade}
                     </div>    
-                    <p><b>Distância:</b>${data.distancia_km || 0} km</p>
-                    <p><b>Tempo:</b> ${data.duracao_min || 0} min</p>
-                    <a href="${data.link_google_maps}"target"=_blank">Abrir no Google Maps</a>
+                    <p><b>Distância:</b> ${data.distancia_km} km</p>
+                    <p><b>Tempo:</b> ${data.duracao_min} min</p>
+                    <button onclick="falarInstrucoes()" style="width:100%; padding: 10px; cursor:pointer; background:#2c3e50; color:white; border: none; border-radius: 5px; margin-bottom: 10px;">
+                        🔊 Ouvir Instruções
+                    </button>    
+                    <a href="${data.link_google_maps}" target="_blank">Abrir no Google Maps</a>
                     <hr>
                     <h4>Passo a passo:</h4>
-                    <ul style="font-size: 0.85em;">
-                        ${data.passo_a_passo ? data.passo_a_passo.map(p => `<li>${p}</li>`).join(''): '<li>Sem instrução disponiveis.</li>'}
-                        </ul>
-                    `;
-                } else {
-                    infoDiv.innerHTML = `<p style="color: red;">Erro: ${data.detalhe || "Erro desconhecido"}</p>
-                    `;          
-                }   console.error("Erro retornado pela API: ", data);
-            }catch (erro){
-                console.error("ERRO NO FETCH: ", erro);
-                infoDiv.innerHTML = `<p style="color: red;"> Erro de conexão com o servidor.</p>`;
-            }        
+                    <ul style="font-size: 0.85em; padding-left: 20px;">
+                        ${data.passo_a_passo.map(p => `<li>${p}</li>`).join('')}
+                    </ul>
+                `;
+                window.instrucoesParaVoz = data.passo_a_passo.join('. ');
+            } else {
+                infoDiv.innerHTML = `<p style="color: red;">Erro: ${data.detalhe}</p>`;
+            }
+        } catch (erro) {
+            console.error("ERRO NO FETCH: ", erro);
+            infoDiv.innerHTML = `<p style="color: red;">Erro de conexão com o servidor.</p>`;
+        }        
+    }
+
+    function falarInstrucoes(){
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // Para o que estiver falando antes
+            const msg = new SpeechSynthesisUtterance("Iniciando orientações. " + window.instrucoesParaVoz);
+            msg.lang = 'pt-BR';
+            window.speechSynthesis.speak(msg);
+        } else {
+            alert("Navegador sem suporte a voz.");
         }
-        </script>
+    }
+</script>
     </body>
 </html>

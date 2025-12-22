@@ -13,6 +13,6 @@ class RotaRequest(BaseModel):
     origem: Coordenada = Field(..., description="Ponto de partida da viagem.")
     destino: Coordenada = Field(..., description="Ponto final da viagem. ")
     tipo_usuario: str = Field(
-        "pcd_cadeirante",
+        "pcd_manual",
         description="Tipo de usuário com critérios de acessibilidade. (ex: pcd_cadeirante, idoso_mobilidade_reduzida)."
     )    
