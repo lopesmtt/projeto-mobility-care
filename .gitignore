@@ -1,13 +1,11 @@
-# Chaves e segredos
+# Ambientes Virtuais
+env/
+venv/
 .env
 
-# Pastas do Python
+# Python
 __pycache__/
 *.pyc
-venv/
-env/
 
-# Configurações de editor
-.vscode/
-.idea/
-.DS_Store
+# Docker
+.dockerignore
