@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from app.models.request import RotaRequest
-from app.services.routing_service import calcular_rota_real
+from models import PontoAcessibilidade
+from schemas.request import RotaRequest
+from services.routing_service import calcular_rota_real
 
 
 router = APIRouter()

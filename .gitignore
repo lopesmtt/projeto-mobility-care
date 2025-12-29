@@ -9,3 +9,7 @@ __pycache__/
 
 # Docker
 .dockerignore
+env/
+venv/
+__pycache__/
+.git/

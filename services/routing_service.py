@@ -1,7 +1,8 @@
 import requests
 import os
 from dotenv import load_dotenv
-from app.models.request import RotaRequest
+from schemas.request import RotaRequest
+from models import PontoAcessibilidade
 
 load_dotenv()
 API_KEY = os.getenv("ORS_API_KEY")
