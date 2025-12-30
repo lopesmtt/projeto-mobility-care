@@ -46,24 +46,33 @@ def calcular_rota_real(request: RotaRequest):
             }
         
         dados = response.json()
-        
-        # ... (Todo o seu código de extração de dados e lógica de perfis está correto) ...
-        
-        # 7. Link do Google (Pequeno ajuste na URL para formato padrão)
-        link_google = f"https://www.google.com/maps/dir/?api=1&origin={request.origem.lat},{request.origem.lon}&destination={request.destino.lat},{request.destino.lon}&travelmode=walking"
-
-        # Retorno (Mantendo sua estrutura)
         feature = dados['features'][0]
         summary = feature['properties']['summary']
         segmento = feature['properties']['segments'][0]
+
+        # --- LÓGICA DE PERFIS (Onde o 'fator' é definido) ---
+        perfil = getattr(request, 'perfil', 'padrao') # Pega o perfil ou usa 'padrao'
         
-        # Suas lógicas de distância e tempo aqui...
-        # [Mantenha o bloco de lógica de perfis que você já escreveu]
+        if perfil == "cadeirante":
+            fator = 1.5
+            alerta = "Rota com inclinação verificada para cadeiras de rodas."
+        elif perfil == "idoso":
+            fator = 1.3
+            alerta = "Rota com pontos de descanso identificados."
+        else:
+            fator = 1.0
+            alerta = "Rota padrão de pedestre."
+
+        # Agora o cálculo funciona porque 'fator' existe!
+        duracao_ajustada = round((summary['duration'] / 60) * fator, 1)
         
+        # 7. Link do Google (Formato corrigido)
+        link_google = f"https://www.google.com/maps/dir/?api=1&origin={request.origem.lat},{request.origem.lon}&destination={request.destino.lat},{request.destino.lon}&travelmode=walking"
+
         return {
             "status": "sucesso",
             "distancia_km": round(summary['distance'] / 1000, 2),
-            "duracao_min": round((summary['duration'] / 60) * fator, 1),
+            "duracao_min": duracao_ajustada,
             "alerta_acessibilidade": alerta,
             "geometria": feature['geometry'],
             "link_google_maps": link_google,
