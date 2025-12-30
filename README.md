@@ -1,29 +1,39 @@
-# ♿ Mobility Care API - Recife
+# ♿ Mobility Care - Rotas Acessíveis em Recife
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/wheelchair.svg" width="100" height="100">
-</p>
+O **Mobility Care** é uma plataforma Full-Stack de auxílio à locomoção urbana para pessoas com deficiência ou mobilidade reduzida. O projeto utiliza geoprocessamento em tempo real para calcular trajetos otimizados, considerando perfis específicos de usuários.
 
-A **Mobility Care API** é uma solução de roteamento inteligente baseada em FastAPI, focada na acessibilidade urbana. Ela foi projetada para calcular rotas em Recife, oferecendo estimativas de tempo realistas e orientações específicas para pessoas cadeirantes.
+🚀 **Veja o projeto online:** [[Link do seu Deploy no Render]](https://seu-app-link.onrender.com)
 
-## 🚀 Funcionalidades
+---
 
-- **♿ Cálculo de Rota Realista:** Ajusta o tempo de percurso aplicando um fator de 1.5x sobre a velocidade de caminhada padrão, adequando-se ao ritmo de um cadeirante.
-- **📍 Link Direto para GPS:** Gera automaticamente um link do Google Maps para navegação visual imediata.
-- **🗣️ Instruções Detalhadas:** Retorna o passo a passo da rota em português.
-- **⚠️ Alertas de Esforço (Sprint 2):** Identifica se o trajeto é superior a 3km e emite um alerta de possível exaustão física.
+## 🛠️ Stack Tecnológica
 
-## 🛠️ Tecnologias Utilizadas
+O projeto foi construído utilizando tecnologias modernas de mercado, focando em performance, escalabilidade e facilidade de deploy:
 
-- **🐍 Python 3.10+**
-- **⚡ FastAPI** (Framework Web)
-- **🗺️ OpenRouteService API** (Dados Geográficos)
-- **🚀 Uvicorn** (Servidor ASGI)
-- **📡 Requests** (Consumo de API)
+- **Backend:** [Python](https://www.python.org/) + [FastAPI](https://fastapi.tiangolo.com/) (API Assíncrona de alta performance).
+- **Banco de Dados:** [PostgreSQL](https://www.postgresql.org/) (Persistência de pontos de interesse e logs).
+- **Infraestrutura:** [Docker](https://www.docker.com/) (Containerização completa da aplicação).
+- **Geoprocessamento:** [OpenRouteService API](https://openrouteservice.org/) (Cálculo de rotas e matriz de distância).
+- **Frontend:** HTML5, CSS3 (Responsivo) e [Leaflet.js](https://leafletjs.com/) para mapas interativos.
+- **Acessibilidade:** Integração com **Web Speech API** para narração de instruções de voz.
 
-## 📋 Como Configurar o Projeto
+---
 
-### 1. Clonar o repositório
-```bash
-git clone [https://github.com/lopesmtt/projeto-mobility-care.git](https://github.com/lopesmtt/projeto-mobility-care.git)
-cd projeto-mobility-care
+## ✨ Funcionalidades Principais
+
+- **Cálculo de Rota Dinâmico:** Integração com mapas para traçar o melhor caminho a pé.
+- **Perfis de Mobilidade:** Ajuste automático de tempo e esforço para cadeira de rodas manual, motorizada ou mobilidade reduzida.
+- **Interface Responsiva:** Design otimizado para uso em smartphones (Mobile First).
+- **Instruções de Voz:** Narração passo a passo do trajeto para facilitar a navegação.
+- **Atalho para Google Maps:** Link externo direto para navegação GPS nativa.
+
+---
+
+## ⚙️ Configuração e Execução (Local)
+
+Para rodar este projeto localmente, você precisará do Docker instalado.
+
+1. **Clone o repositório:**
+   ```bash
+   git clone [https://github.com/seu-usuario/mobility-care.git](https://github.com/seu-usuario/mobility-care.git)
+   cd mobility-care
