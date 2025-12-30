@@ -73,39 +73,46 @@
         const tipoUsuario = document.getElementById('tipo_usuario').value;
         infoDiv.innerHTML = '<p>⏳ Calculando rota acessível...</p>';
 
+        // Ajuste da URL: No Render não precisamos de baseUrl manual se o index é servido pelo próprio Python
         const baseUrl = window.location.hostname === "localhost" ? "http://localhost:8000" : "";
-        
-        // Tentamos o Formato A (Listas), se falhar tentamos o Formato B (Objetos)
-        const formatosDePayload = [
-            { inicio: [origem.lat, origem.lng], fim: [destino.lat, destino.lng], tipo_mobilidade: tipoUsuario },
-            { origem: {lat: origem.lat, lon: origem.lng}, destino: {lat: destino.lat, lon: destino.lng}, tipo_usuario: tipoUsuario }
-        ];
+        const endpoint = `${baseUrl}/api/v1/otimizar-rota`;
 
-        for (let payload of formatosDePayload) {
-            try {
-                const res = await fetch(`${baseUrl}/api/v1/otimizar-rota`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
+        // FORMATO PROFISSIONAL: Exatamente o que sua API validou no histórico (origem/destino com lat/lon)
+        const payload = {
+            origem: {
+                lat: origem.lat,
+                lon: origem.lng
+            },
+            destino: {
+                lat: destino.lat,
+                lon: destino.lng
+            },
+            tipo_usuario: tipoUsuario
+        };
 
-                const data = await res.json();
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
 
-                if (res.ok && data.status === "sucesso") {
-                    renderizarRota(data);
-                    return; // Sucesso! Sai da função.
-                } else if (res.status === 400) {
-                    console.warn("Formato negado, tentando próximo...", payload);
-                    continue; // Tenta o próximo formato do loop
-                } else {
-                    throw new Error(data.detail || "Erro desconhecido");
-                }
-            } catch (erro) {
-                console.error("Tentativa falhou:", erro);
+            const data = await res.json();
+
+            if (res.ok && data.status === "sucesso") {
+                renderizarRota(data);
+            } else {
+                // Se a API retornar erro, mostramos o detalhe técnico para depuração profissional
+                console.error("Erro detalhado da API:", data);
+                infoDiv.innerHTML = `<p style="color: red;">❌ Erro na API: ${data.detail || "Verifique os logs do servidor"}</p>`;
             }
+        } catch (erro) {
+            console.error("Falha na conexão:", erro);
+            infoDiv.innerHTML = `<p style="color: red;">❌ Servidor offline ou erro de rede.</p>`;
         }
-        
-        infoDiv.innerHTML = `<p style="color: red;">❌ Não foi possível calcular a rota. Verifique se os pontos estão em Recife ou se a API está online.</p>`;
     }
 
     function renderizarRota(data) {
